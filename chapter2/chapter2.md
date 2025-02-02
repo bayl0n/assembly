@@ -44,5 +44,22 @@
 - However, modern CPUs have advanced quite a bit in recent time and are now much more complex
     - The basic operation is still the same, but it is complicated by the use of cache hierarchies, superscalar processors, pipelining, branch prediction, out-of-order execution, microcode translation, coprocessors, and other optimizations
 
-# Some Terms
-- test
+## Some Terms
+- Computer memory is a numbered swquence of fixed-size storage programs
+- The number attached to each storage location is called it's *address*
+- The size of a single storage location is called a *byte*
+    - On x86 processors, a byte is a number between 0 and 255
+- These numbers can represent different things on a computer, such as a character using an ASCII code
+    - e.g. 'A' is represented using the number 65
+- To represent larger numbers, a combination of bytes can be used
+    - TWo bytes can be used to represent any number between 0 and 65536
+- It can be difficult to stick bytes together to represent numbers and requires math
+    - Luckily, some computer architectures can do the calculations for four-bytes by default
+- *Registers* are a special-purpose storage containers that the computer uses for computation
+    - They represent what the computer is currently working on/computing
+- On the x86 computer architecture, registers are four bytes long
+- The size of a typical register is called a computer's **word** size
+- x86 processors have four-byte words
+- This means that it is most natural on these computers to do computations four bytes at a time
+    - This comes out to roughly 4 billion values
+- Addresses are also four bytes (1 word) long, and also fit in a register
