@@ -12,7 +12,11 @@ The resources I'm going to be using to learn are:
 
 # Goals
 
-- [ ] Complete and make a turing complete computer in Turing Complete
+- [x] Complete and make a turing complete computer in Turing Complete
+    - ![tree completion](./media/turing-complete.png)
+    - ![achievement](./media/achievement.png)
 - [ ] Make a simple text-based game in assembly
 - [ ] Start and complete nand2tetris
 - [ ] Make my own programming language (Will require additional learning)
+
+
