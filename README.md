@@ -15,8 +15,6 @@ The resources I'm going to be using to learn are:
 - [x] Complete and make a turing complete computer in Turing Complete
     - ![tree completion](./media/turing-complete.png)
     - ![achievement](./media/achievement.png)
-- [ ] Make a simple text-based game in assembly
-- [ ] Start and complete nand2tetris
+- [ ] Complete nand2tetris
+- [ ] Make a simple game in assembly (breakout, pong, space invaders, etc)
 - [ ] Make my own programming language (Will require additional learning)
-
-

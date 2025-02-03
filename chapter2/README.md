@@ -63,3 +63,9 @@
 - This means that it is most natural on these computers to do computations four bytes at a time
     - This comes out to roughly 4 billion values
 - Addresses are also four bytes (1 word) long, and also fit in a register
+- The computer can't tell the difference between a value that is an address, number ASCII code, another for another purpose
+- Addresses which are stored in memory are also called *pointers*
+
+
+## Interpreting Memory
+
