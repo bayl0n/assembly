@@ -13,8 +13,13 @@ The resources I'm going to be using to learn are:
 # Goals
 
 - [x] Complete and make a turing complete computer in Turing Complete
-    - ![tree completion](./media/turing-complete.png)
-    - ![achievement](./media/achievement.png)
+    - [x] Complete Overture architecture
+    - [ ] Complete LEG architecture
+
+![tree completion](./media/turing-complete.png)
+
+![achievement](./media/achievement.png)
+
 - [ ] Complete nand2tetris and get certificate (currently in progress)
 - [ ] Make a simple game in assembly (breakout, pong, space invaders, etc)
 - [ ] Make my own programming language (Will require additional learning)
