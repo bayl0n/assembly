@@ -2,12 +2,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define VARIABLE_ADDRESS 1024
+#define VARIABLE_ADDRESS 16
 #define LINE_BUFFER 1024
+#define MAX_SYMBOLS 2048
+#define MAX_FILE_SIZE 2048 * 2048
 
 typedef struct {
-	char* symbol;
-	int instruction;
+	char symbol[MAX_SYMBOLS];
+	int value;
 } Symbol;
 
 enum State {
@@ -23,97 +25,182 @@ enum State {
 	JUMP
 };
 
-int parser(char* line, int size, FILE* file);
-int parse_line(char* line);
+char* parser(char* line, int size, FILE* file);
+char* parse_line(char* line, int* current_line);
 void intt16b(int num, char *binaryStr, int bits);
 void convert_cmp(int* instruction, char* cmp);
 void convert_dest(int* instruction, char* cmp);
 void convert_jmp(int* instruction, char* cmp);
+int lookupSymbolValue(char* symbol);
+int isSymbolValue(char* symbol);
+void setSymbolValue(char* symbol, int value);
 
-int parser(char* line, int size, FILE* file) {
+Symbol symbol_table[MAX_SYMBOLS];
+int symbol_c = 0;
+int variable_c = VARIABLE_ADDRESS;
+int is_second_pass = 0;
+
+char* parser(char* line, int size, FILE* file) {
+	int current_line = 0;
+	variable_c = VARIABLE_ADDRESS;
+	char* output = malloc(MAX_FILE_SIZE);
+
 	while(fgets(line, size, file)) {
 		switch(line[0]) {
 			case '\n':
-			case ' ':
 			case '/':
 				continue;
 			default:
-				parse_line(line);
+				char* line_output = parse_line(line, &current_line);
+				if (strlen(line_output) > 0) {
+					strcat(output, line_output);
+					strcat(output, "\n");
+				}
 		}
 	}
 
-	return 0;
+	if (is_second_pass)
+		printf("%s", output);
+
+	is_second_pass = 1;
+	return output;
 }
 
-int parse_line(char* line) {
+char* parse_line(char* line, int* current_line) {
 	// Assume that the instruction is a c instruction
-	static enum State currentState = C_INSTRUCTION;
+	static enum State current_state = C_INSTRUCTION;
 	char* pos = &line[0]; // get the memory address of the array so we can iterate over it
 			      
+	int shouldRun = 1; // determines if the line should print/write an instruction
+
 	char buffer[LINE_BUFFER];
 	int buffer_c = 0;
 
+	int string_end = 0;
+
 	int instruction = 0b1110000000000000;
-	while(*pos != '\0')
+	while(!string_end && shouldRun)
 	{
 		switch(*pos) {
-			case '/':
 			case ' ':
 			break;
+			case '/':
+				// Ignore this line if two //
+				if (current_state == COMMENT)
+					shouldRun = 0;
+
+				current_state = COMMENT;
+			break;
+			case '\0':
 			case '\n':
 				// Check if the buffer is 
 				buffer[buffer_c++] = '\0';
 				buffer_c = 0;
 
-				switch(currentState) {
+				switch(current_state) {
 					case COMP:
 						convert_cmp(&instruction, buffer);
 					break;
 					case JUMP:
 						convert_jmp(&instruction, buffer);
+
+						char dbg[16];
+						intt16b(instruction, dbg, 16);
+					break;
+					case SYMBOL:
+						// A symbol has been defined here
+						if (!isSymbolValue(buffer)) {
+							strcpy(symbol_table[symbol_c].symbol, buffer);
+							symbol_table[symbol_c++].value = *current_line;
+						}
+						else {
+							// Update the current table value to have this line value
+							setSymbolValue(buffer, *current_line);
+						}
+
+						shouldRun = 0;
 					break;
 					case A_REGISTER:
 						char* end;
+
+						// Attempt to convert buffer to int
 						int constant = (int)strtol(buffer, &end, 10);
 						if ((end == buffer) || (*end != '\0')) {
 							// process symbol
+							if (isSymbolValue(buffer)) {
+								int location = lookupSymbolValue(buffer);
+								instruction = instruction + location;
+							}
+							else {
+								if (!isSymbolValue(buffer)) {
+									strcpy(symbol_table[symbol_c].symbol, buffer);
+									if (is_second_pass) {
+										symbol_table[symbol_c++].value = variable_c++;
+
+										int location = lookupSymbolValue(buffer);
+										instruction = instruction + location;
+									}
+								}
+								else {
+									int location = lookupSymbolValue(buffer);
+									instruction = instruction + location;
+								}
+							}
 						}
 						else {
 							// process constant
 							instruction = instruction + constant;
 						}
 				}
+				
+				string_end = 1;
 			break;
 			case '@':
 				// instruction is an A instruction
 				instruction = instruction & 0b0000000000000000;
-				currentState = A_REGISTER;
+				current_state = A_REGISTER;
 			break;
 			case '=':
 				// process last buffer as dest
-				currentState = COMP;
+				current_state = COMP;
 				buffer[buffer_c++] = '\0';
 				buffer_c = 0;
 				convert_dest(&instruction, buffer);
 			break;
 			case ';':
 				// process last buffer as comp
-				currentState = JUMP;
+				current_state = JUMP;
 				buffer[buffer_c++] = '\0';
 				buffer_c = 0;
 				convert_cmp(&instruction, buffer);
 			break;
+			case '(':
+			break;
+			case ')':
+				current_state = SYMBOL;
+			break;
 			default:
-
-				buffer[buffer_c++] = *pos;
+				switch (current_state) {
+					case COMMENT:
+					break;
+					default:
+					buffer[buffer_c++] = *pos;
+				}
 		}
 		pos++;
 	}
 
-	char buf[16];
+	char* buf = malloc(16);
 	intt16b(instruction, buf, 16);
-	printf("%s\n", buf);
-	return instruction;
+
+	if (shouldRun)
+	{
+		(*current_line)++;
+
+		if (is_second_pass)
+			return buf;
+	}
+	return malloc(1);
 }
 
 void convert_dest(int* instruction, char* cmp) {
@@ -218,12 +305,67 @@ void intt16b(int num, char *binaryStr, int bits) {
 	binaryStr[bits] = '\0';
 }
 
+int lookupSymbolValue(char* symbol) {
+	for (int i = symbol_c - 1; i >= 0; i--) {
+		if (strcmp(symbol_table[i].symbol, symbol) == 0) {
+			return symbol_table[i].value;
+		}
+	}
+	return -1;
+}
+
+void setSymbolValue(char* symbol, int value) {
+	for (int i = symbol_c - 1; i >= 0; i--) {
+		if (strcmp(symbol_table[i].symbol, symbol) == 0) {
+			symbol_table[i].value = value;
+		}
+	}
+}
+
+int isSymbolValue(char* symbol) {
+	for (int i = symbol_c - 1; i >= 0; i--) {
+		if (strcmp(symbol_table[i].symbol, symbol) == 0) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
 int main(int argc, char *argv[]) {
 	FILE* asmFile;
 	char fileContents[1024];
 
 	// Assume that the first argument is the filename
 	asmFile = fopen(argv[1], "r");
+
+	// define default symbols
+	for(int i = symbol_c; i <= 16; i++) {
+		snprintf(symbol_table[i].symbol, MAX_SYMBOLS,"R%d", i);
+		symbol_table[i].value = i;
+		symbol_c = i;
+	}
+
+	strcpy(symbol_table[symbol_c].symbol, "SCREEN");
+	symbol_table[symbol_c++].value = 16384;
+
+	strcpy(symbol_table[symbol_c].symbol, "KBD");
+	symbol_table[symbol_c++].value = 24576;
+
+	strcpy(symbol_table[symbol_c].symbol, "SP");
+	symbol_table[symbol_c++].value = 0;
+
+	strcpy(symbol_table[symbol_c].symbol, "LCL");
+	symbol_table[symbol_c++].value = 1;
+
+	strcpy(symbol_table[symbol_c].symbol, "ARG");
+	symbol_table[symbol_c++].value = 2;
+
+	strcpy(symbol_table[symbol_c].symbol, "THIS");
+	symbol_table[symbol_c++].value = 3;
+
+	strcpy(symbol_table[symbol_c].symbol, "THAT");
+	symbol_table[symbol_c++].value = 4;
 
 	// Check if the file opened successfully
 	if (asmFile == NULL) {
@@ -232,7 +374,26 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 	else {
+		// Pass twice
 		parser(fileContents, 1024, asmFile);
+		rewind(asmFile);
+		char* hackContents = parser(fileContents, 1024, asmFile);
+
+		FILE* hackFile;
+
+		hackFile = fopen(argv[2], "w");
+
+		if (hackFile == NULL) {
+			printf("File %s could not be written.\n", argv[2]);
+
+			return -1;
+		}
+		else {
+			fprintf(hackFile, "%s", hackContents);
+
+			fclose(hackFile);
+		}
+
 	}
 
 	fclose(asmFile);
