@@ -20,7 +20,8 @@ The resources I'm going to be using to learn are:
 
 ![achievement](./media/achievement.png)
 
-- [x] Complete nand2tetris and get certificate
+- [x] Complete nand2tetris Part I and get certificate
+- [ ] Complete nand2tetris Part II and get certificate
 - [ ] Make a simple game in assembly (breakout, pong, space invaders, etc)
 - [ ] Make my own programming language (Will require additional learning)
     - [x] Made my own assembler in nand2tetris for the HACK assembly language
