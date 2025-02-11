@@ -8,6 +8,8 @@ The resources I'm going to be using to learn are:
 
 - Programming from the Ground Up by Jonathan Bartlett
 - Turing Complete (Simulation game created by LevelHead)
+    - Part I: Computer Architecture
+    - Part II: Software Architecture
 - nand2tetris
 
 # Goals
